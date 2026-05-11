@@ -1,0 +1,23 @@
+# deps
+node_modules
+
+# next
+.next
+out
+
+# env
+.env
+.env.local
+.env.production
+
+# db
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# os
+.DS_Store
+
+# prisma
+prisma/migrations

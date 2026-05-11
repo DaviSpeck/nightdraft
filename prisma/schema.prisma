@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── JOGO ─────────────────────────────────────────────
+
+model Game {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  logoUrl   String?
+  coverUrl  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  maps     Map[]
+  corujoes Corujao[]
+}
+
+// ─── JOGADOR ──────────────────────────────────────────
+
+model Player {
+  id        String   @id @default(cuid())
+  name      String
+  nickname  String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  corujoes   CorujaoPlayer[]
+  matchSlots MatchTeamMember[]
+}
+
+// ─── MAPA ─────────────────────────────────────────────
+
+model Map {
+  id          String  @id @default(cuid())
+  name        String
+  displayName String
+  imageUrl    String?
+  isActive    Boolean @default(true)
+
+  gameId   String
+  game     Game      @relation(fields: [gameId], references: [id])
+  banPicks BanPick[]
+
+  @@unique([gameId, name])
+}
+
+// ─── CORUJÃO ──────────────────────────────────────────
+
+model Corujao {
+  id        String        @id @default(cuid())
+  name      String
+  date      DateTime
+  status    CorujaoStatus @default(DRAFT)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  gameId  String
+  game    Game    @relation(fields: [gameId], references: [id])
+
+  players CorujaoPlayer[]
+  matches Match[]
+}
+
+model CorujaoPlayer {
+  corujaoId String
+  playerId  String
+  corujao   Corujao @relation(fields: [corujaoId], references: [id], onDelete: Cascade)
+  player    Player  @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@id([corujaoId, playerId])
+}
+
+// ─── PARTIDA ──────────────────────────────────────────
+
+model Match {
+  id         String      @id @default(cuid())
+  sequence   Int
+  format     MatchFormat @default(MD1)
+  status     MatchStatus @default(SCHEDULED)
+  nameTeamA  String?
+  nameTeamB  String?
+  scoreTeamA Int?
+  scoreTeamB Int?
+  playedAt   DateTime?
+  createdAt  DateTime    @default(now())
+
+  corujaoId String
+  corujao   Corujao @relation(fields: [corujaoId], references: [id], onDelete: Cascade)
+
+  members  MatchTeamMember[]
+  banPicks BanPick[]
+
+  @@unique([corujaoId, sequence])
+}
+
+model MatchTeamMember {
+  id       String    @id @default(cuid())
+  side     MatchSide
+  matchId  String
+  playerId String
+  match    Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player   Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, playerId])
+}
+
+// ─── BAN/PICK ─────────────────────────────────────────
+
+model BanPick {
+  id      String        @id @default(cuid())
+  action  BanPickAction
+  order   Int
+  side    MatchSide?
+
+  matchId String
+  mapId   String
+  match   Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  map     Map    @relation(fields: [mapId], references: [id])
+
+  @@unique([matchId, order])
+}
+
+// ─── ENUMS ────────────────────────────────────────────
+
+enum CorujaoStatus {
+  DRAFT
+  IN_PROGRESS
+  FINISHED
+}
+
+enum MatchFormat {
+  MD1
+  MD3
+  MD5
+}
+
+enum MatchStatus {
+  SCHEDULED
+  ONGOING
+  COMPLETED
+  CANCELLED
+}
+
+enum MatchSide {
+  TEAM_A
+  TEAM_B
+}
+
+enum BanPickAction {
+  BAN
+  PICK
+  DECIDER
+}
