@@ -4,36 +4,36 @@ import BanPickBoard from '@/components/ban-pick/BanPickBoard'
 import { getCurrentStep, getSequence, isComplete } from '@/lib/ban-pick'
 
 export default async function BanPickPage({ params }: { params: Promise<{ id: string; matchId: string }> }) {
-  const { id: corujaoId, matchId } = await params
+  const { id: corujaoId, matchId: jogoId } = await params
 
-  const match = await prisma.match.findUnique({
-    where: { id: matchId },
+  const jogo = await prisma.jogo.findUnique({
+    where: { id: jogoId },
     include: {
       banPicks: { orderBy: { order: 'asc' }, include: { map: true } },
       corujao: { include: { game: true } },
     },
   })
-  if (!match) notFound()
+  if (!jogo) notFound()
 
   const activeMaps = await prisma.map.findMany({
-    where: { gameId: match.corujao.gameId, isActive: true },
+    where: { gameId: jogo.corujao.gameId, isActive: true },
     orderBy: { displayName: 'asc' },
   })
 
-  const doneCount = match.banPicks.length
-  const currentStep = getCurrentStep(match.format, doneCount)
-  const totalSteps = getSequence(match.format).length
-  const done = isComplete(match.format, doneCount)
+  const doneCount = jogo.banPicks.length
+  const currentStep = getCurrentStep(jogo.format, doneCount)
+  const totalSteps = getSequence(jogo.format).length
+  const done = isComplete(jogo.format, doneCount)
 
   return (
     <BanPickBoard
-      matchId={matchId}
+      matchId={jogoId}
       corujaoId={corujaoId}
-      format={match.format}
-      nameTeamA={match.nameTeamA ?? 'Time A'}
-      nameTeamB={match.nameTeamB ?? 'Time B'}
+      format={jogo.format}
+      nameTeamA={jogo.nameTeamA ?? 'Time A'}
+      nameTeamB={jogo.nameTeamB ?? 'Time B'}
       allMaps={activeMaps}
-      banPicks={match.banPicks}
+      banPicks={jogo.banPicks}
       currentStep={currentStep}
       stepIndex={doneCount}
       totalSteps={totalSteps}

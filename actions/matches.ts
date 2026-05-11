@@ -25,48 +25,47 @@ export async function createMatch(corujaoId: string, formData: FormData) {
     select: { playerId: true },
   })
 
-  const members: { playerId: string; side: 'TEAM_A' | 'TEAM_B' }[] = []
+  const membros: { playerId: string; side: 'TEAM_A' | 'TEAM_B' }[] = []
   for (const { playerId } of corujaoPlayers) {
     const side = formData.get(`player_${playerId}`) as string
-    if (side === 'TEAM_A' || side === 'TEAM_B') members.push({ playerId, side })
+    if (side === 'TEAM_A' || side === 'TEAM_B') membros.push({ playerId, side })
   }
 
-  if (members.filter(m => m.side === 'TEAM_A').length === 0) throw new Error('TEAM A sem jogadores')
-  if (members.filter(m => m.side === 'TEAM_B').length === 0) throw new Error('TEAM B sem jogadores')
+  if (membros.filter(m => m.side === 'TEAM_A').length === 0) throw new Error('Time A sem jogadores')
+  if (membros.filter(m => m.side === 'TEAM_B').length === 0) throw new Error('Time B sem jogadores')
 
-  const last = await prisma.match.findFirst({ where: { corujaoId }, orderBy: { sequence: 'desc' } })
+  const last = await prisma.jogo.findFirst({ where: { corujaoId }, orderBy: { sequence: 'desc' } })
   const sequence = (last?.sequence ?? 0) + 1
 
-  const match = await prisma.match.create({
+  const jogo = await prisma.jogo.create({
     data: {
       corujaoId,
       sequence,
       format: parsed.data.format as MatchFormat,
       nameTeamA: parsed.data.nameTeamA,
       nameTeamB: parsed.data.nameTeamB,
-      members: { create: members },
+      membros: { create: membros },
     },
   })
 
   revalidatePath(`/corujoes/${corujaoId}`)
-  redirect(`/corujoes/${corujaoId}/matches/${match.id}`)
+  redirect(`/corujoes/${corujaoId}/matches/${jogo.id}`)
 }
 
-export async function updateMatch(matchId: string, corujaoId: string, formData: FormData) {
-  const match = await prisma.match.findUnique({ where: { id: matchId } })
-  if (!match) throw new Error('Partida não encontrada')
+export async function updateMatch(jogoId: string, corujaoId: string, formData: FormData) {
+  const jogo = await prisma.jogo.findUnique({ where: { id: jogoId } })
+  if (!jogo) throw new Error('Jogo não encontrado')
 
   const nameTeamA = (formData.get('nameTeamA') as string) || null
   const nameTeamB = (formData.get('nameTeamB') as string) || null
 
   await prisma.$transaction(async (tx) => {
-    await tx.match.update({
-      where: { id: matchId },
+    await tx.jogo.update({
+      where: { id: jogoId },
       data: { nameTeamA, nameTeamB },
     })
 
-    // Only reassign sides if match hasn't started yet
-    if (match.status === 'SCHEDULED') {
+    if (jogo.status === 'SCHEDULED') {
       const corujaoPlayers = await tx.corujaoPlayer.findMany({
         where: { corujaoId },
         select: { playerId: true },
@@ -74,8 +73,8 @@ export async function updateMatch(matchId: string, corujaoId: string, formData: 
       for (const { playerId } of corujaoPlayers) {
         const side = formData.get(`player_${playerId}`) as string
         if (side === 'TEAM_A' || side === 'TEAM_B') {
-          await tx.matchTeamMember.updateMany({
-            where: { matchId, playerId },
+          await tx.jogoMembro.updateMany({
+            where: { jogoId, playerId },
             data: { side },
           })
         }
@@ -83,21 +82,21 @@ export async function updateMatch(matchId: string, corujaoId: string, formData: 
     }
   })
 
-  revalidatePath(`/corujoes/${corujaoId}/matches/${matchId}`)
-  redirect(`/corujoes/${corujaoId}/matches/${matchId}`)
+  revalidatePath(`/corujoes/${corujaoId}/matches/${jogoId}`)
+  redirect(`/corujoes/${corujaoId}/matches/${jogoId}`)
 }
 
-export async function finalizeMatch(matchId: string, corujaoId: string, formData: FormData) {
+export async function finalizeMatch(jogoId: string, corujaoId: string, formData: FormData) {
   const scoreA = parseInt(formData.get('scoreTeamA') as string)
   const scoreB = parseInt(formData.get('scoreTeamB') as string)
   if (isNaN(scoreA) || isNaN(scoreB)) throw new Error('Placar inválido')
 
   await prisma.$transaction(async (tx) => {
-    await tx.match.update({
-      where: { id: matchId },
+    await tx.jogo.update({
+      where: { id: jogoId },
       data: { scoreTeamA: scoreA, scoreTeamB: scoreB, status: 'COMPLETED', playedAt: new Date() },
     })
-    const remaining = await tx.match.count({
+    const remaining = await tx.jogo.count({
       where: { corujaoId, status: { not: 'COMPLETED' } },
     })
     if (remaining === 0) {
@@ -109,8 +108,8 @@ export async function finalizeMatch(matchId: string, corujaoId: string, formData
   redirect(`/corujoes/${corujaoId}`)
 }
 
-export async function deleteMatch(matchId: string, corujaoId: string) {
-  await prisma.match.delete({ where: { id: matchId } })
+export async function deleteMatch(jogoId: string, corujaoId: string) {
+  await prisma.jogo.delete({ where: { id: jogoId } })
   revalidatePath(`/corujoes/${corujaoId}`)
   redirect(`/corujoes/${corujaoId}`)
 }
@@ -121,26 +120,26 @@ const StatRowSchema = z.object({
   assists: z.coerce.number().int().min(0).default(0),
 })
 
-export async function saveMapStats(matchId: string, corujaoId: string, mapId: string, formData: FormData) {
-  const match = await prisma.match.findUnique({
-    where: { id: matchId },
-    include: { members: { include: { player: true } } },
+export async function saveMapStats(jogoId: string, corujaoId: string, mapId: string, formData: FormData) {
+  const jogo = await prisma.jogo.findUnique({
+    where: { id: jogoId },
+    include: { membros: { include: { player: true } } },
   })
-  if (!match) throw new Error('Partida não encontrada')
+  if (!jogo) throw new Error('Jogo não encontrado')
 
-  const upserts = match.members.map(member => {
+  const upserts = jogo.membros.map(membro => {
     const parsed = StatRowSchema.parse({
-      kills: formData.get(`kills_${member.playerId}_${mapId}`),
-      deaths: formData.get(`deaths_${member.playerId}_${mapId}`),
-      assists: formData.get(`assists_${member.playerId}_${mapId}`),
+      kills: formData.get(`kills_${membro.playerId}_${mapId}`),
+      deaths: formData.get(`deaths_${membro.playerId}_${mapId}`),
+      assists: formData.get(`assists_${membro.playerId}_${mapId}`),
     })
-    return prisma.matchMapStat.upsert({
-      where: { matchId_mapId_playerId: { matchId, mapId, playerId: member.playerId } },
+    return prisma.jogoMapStat.upsert({
+      where: { jogoId_mapId_playerId: { jogoId, mapId, playerId: membro.playerId } },
       update: parsed,
-      create: { matchId, mapId, playerId: member.playerId, ...parsed },
+      create: { jogoId, mapId, playerId: membro.playerId, ...parsed },
     })
   })
 
   await prisma.$transaction(upserts)
-  revalidatePath(`/corujoes/${corujaoId}/matches/${matchId}`)
+  revalidatePath(`/corujoes/${corujaoId}/matches/${jogoId}`)
 }

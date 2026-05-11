@@ -86,7 +86,7 @@ export default function BanPickBoard({
       ) : done ? (
         <div className="px-6 py-5 text-center border-b border-white/[0.06] bg-accent-green/5">
           <p className="text-base font-bold text-accent-green">✓ Ban/Pick concluído</p>
-          <p className="text-xs text-white/40 mt-1">Registre o resultado na tela da partida</p>
+          <p className="text-xs text-white/40 mt-1">Registre o resultado na tela do jogo</p>
         </div>
       ) : null}
 
@@ -205,7 +205,7 @@ export default function BanPickBoard({
       {done && (
         <div className="border-t border-white/[0.06] px-6 py-4 text-center">
           <a href={`/corujoes/${corujaoId}/matches/${matchId}`} className="inline-flex items-center gap-2 text-sm text-accent-blue hover:underline">
-            Ver partida e registrar resultado →
+            Ver jogo e registrar resultado →
           </a>
         </div>
       )}

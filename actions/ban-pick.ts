@@ -4,31 +4,31 @@ import { prisma } from '@/lib/db'
 import { getCurrentStep, isComplete } from '@/lib/ban-pick'
 import { revalidatePath } from 'next/cache'
 
-export async function submitBanPick(matchId: string, corujaoId: string, mapId: string) {
-  const match = await prisma.match.findUniqueOrThrow({
-    where: { id: matchId },
+export async function submitBanPick(jogoId: string, corujaoId: string, mapId: string) {
+  const jogo = await prisma.jogo.findUniqueOrThrow({
+    where: { id: jogoId },
     include: { banPicks: true },
   })
 
-  const step = getCurrentStep(match.format, match.banPicks.length)
+  const step = getCurrentStep(jogo.format, jogo.banPicks.length)
   if (!step) throw new Error('Ban/pick já completo')
 
-  const usedMapIds = match.banPicks.map(bp => bp.mapId)
+  const usedMapIds = jogo.banPicks.map(bp => bp.mapId)
   if (usedMapIds.includes(mapId)) throw new Error('Mapa já utilizado')
 
   await prisma.$transaction(async (tx) => {
     await tx.banPick.create({
       data: {
-        matchId,
+        jogoId,
         mapId,
         action: step.action,
-        order: match.banPicks.length,
+        order: jogo.banPicks.length,
         side: step.side,
       },
     })
 
-    if (match.status === 'SCHEDULED') {
-      await tx.match.update({ where: { id: matchId }, data: { status: 'ONGOING' } })
+    if (jogo.status === 'SCHEDULED') {
+      await tx.jogo.update({ where: { id: jogoId }, data: { status: 'ONGOING' } })
       await tx.corujao.updateMany({
         where: { id: corujaoId, status: 'DRAFT' },
         data: { status: 'IN_PROGRESS' },
@@ -36,5 +36,5 @@ export async function submitBanPick(matchId: string, corujaoId: string, mapId: s
     }
   })
 
-  revalidatePath(`/corujoes/${corujaoId}/matches/${matchId}/ban-pick`)
+  revalidatePath(`/corujoes/${corujaoId}/matches/${jogoId}/ban-pick`)
 }

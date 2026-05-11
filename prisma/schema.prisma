@@ -7,7 +7,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── JOGO ─────────────────────────────────────────────
+// ─── JOGO (título/plataforma) ──────────────────────────
+// Nota: "Game" aqui = Counter-Strike, Valorant, etc.
+// O que o usuário chama de "jogo" (MD3) é o model Jogo abaixo.
 
 model Game {
   id        String   @id @default(cuid())
@@ -32,9 +34,9 @@ model Player {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  corujoes   CorujaoPlayer[]
-  matchSlots MatchTeamMember[]
-  mapStats   MatchMapStat[]
+  corujoes     CorujaoPlayer[]
+  jogoSlots    JogoMembro[]
+  jogoMapStats JogoMapStat[]
 }
 
 // ─── MAPA ─────────────────────────────────────────────
@@ -46,10 +48,10 @@ model Map {
   imageUrl    String?
   isActive    Boolean @default(true)
 
-  gameId    String
-  game      Game           @relation(fields: [gameId], references: [id])
-  banPicks  BanPick[]
-  mapStats  MatchMapStat[]
+  gameId       String
+  game         Game          @relation(fields: [gameId], references: [id])
+  banPicks     BanPick[]
+  jogoMapStats JogoMapStat[]
 
   @@unique([gameId, name])
 }
@@ -64,11 +66,11 @@ model Corujao {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
-  gameId  String
-  game    Game    @relation(fields: [gameId], references: [id])
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id])
 
   players CorujaoPlayer[]
-  matches Match[]
+  jogos   Jogo[]
 }
 
 model CorujaoPlayer {
@@ -80,9 +82,9 @@ model CorujaoPlayer {
   @@id([corujaoId, playerId])
 }
 
-// ─── PARTIDA ──────────────────────────────────────────
+// ─── JOGO (série MD1/MD3/MD5) ─────────────────────────
 
-model Match {
+model Jogo {
   id         String      @id @default(cuid())
   sequence   Int
   format     MatchFormat @default(MD1)
@@ -97,54 +99,56 @@ model Match {
   corujaoId String
   corujao   Corujao @relation(fields: [corujaoId], references: [id], onDelete: Cascade)
 
-  members   MatchTeamMember[]
-  banPicks  BanPick[]
-  mapStats  MatchMapStat[]
+  membros  JogoMembro[]
+  banPicks BanPick[]
+  mapStats JogoMapStat[]
 
   @@unique([corujaoId, sequence])
 }
 
-model MatchTeamMember {
+model JogoMembro {
   id       String    @id @default(cuid())
   side     MatchSide
-  matchId  String
+  jogoId   String
   playerId String
-  match    Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  player   Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
-
-  @@unique([matchId, playerId])
-}
-
-model MatchMapStat {
-  id      String @id @default(cuid())
-  kills   Int    @default(0)
-  deaths  Int    @default(0)
-  assists Int    @default(0)
-
-  matchId  String
-  mapId    String
-  playerId String
-  match    Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  map      Map    @relation(fields: [mapId], references: [id])
+  jogo     Jogo   @relation(fields: [jogoId], references: [id], onDelete: Cascade)
   player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
-  @@unique([matchId, mapId, playerId])
+  @@unique([jogoId, playerId])
 }
 
 // ─── BAN/PICK ─────────────────────────────────────────
 
 model BanPick {
-  id      String        @id @default(cuid())
-  action  BanPickAction
-  order   Int
-  side    MatchSide?
+  id     String        @id @default(cuid())
+  action BanPickAction
+  order  Int
+  side   MatchSide?
 
-  matchId String
-  mapId   String
-  match   Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  map     Map    @relation(fields: [mapId], references: [id])
+  jogoId String
+  mapId  String
+  jogo   Jogo   @relation(fields: [jogoId], references: [id], onDelete: Cascade)
+  map    Map    @relation(fields: [mapId], references: [id])
 
-  @@unique([matchId, order])
+  @@unique([jogoId, order])
+}
+
+// ─── STATS POR MAPA ───────────────────────────────────
+
+model JogoMapStat {
+  id      String @id @default(cuid())
+  kills   Int    @default(0)
+  deaths  Int    @default(0)
+  assists Int    @default(0)
+
+  jogoId   String
+  mapId    String
+  playerId String
+  jogo     Jogo   @relation(fields: [jogoId], references: [id], onDelete: Cascade)
+  map      Map    @relation(fields: [mapId], references: [id])
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([jogoId, mapId, playerId])
 }
 
 // ─── ENUMS ────────────────────────────────────────────

@@ -7,7 +7,7 @@ import Card, { CardContent, CardHeader } from '@/components/ui/Card'
 import { createMatch } from '@/actions/matches'
 import { DEFAULT_AVATAR } from '@/lib/avatars'
 
-export default async function NewMatchPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function NovoJogoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const corujao = await prisma.corujao.findUnique({
     where: { id },
@@ -20,7 +20,7 @@ export default async function NewMatchPage({ params }: { params: Promise<{ id: s
   return (
     <div className="p-6 max-w-2xl">
       <PageHeader
-        title="Nova partida"
+        title="Novo jogo"
         subtitle={corujao.name}
         backHref={`/corujoes/${id}`}
         backLabel={corujao.name}
@@ -42,7 +42,7 @@ export default async function NewMatchPage({ params }: { params: Promise<{ id: s
           </CardContent>
         </Card>
 
-        {/* Nomes dos times (opcional) */}
+        {/* Nomes dos times */}
         <Card>
           <CardHeader><p className="text-sm font-medium text-white/75">Nomes dos times <span className="text-white/30 font-normal">(opcional)</span></p></CardHeader>
           <CardContent className="grid grid-cols-2 gap-3">
@@ -86,7 +86,7 @@ export default async function NewMatchPage({ params }: { params: Promise<{ id: s
         </Card>
 
         <div className="flex gap-2">
-          <Button type="submit">Criar partida</Button>
+          <Button type="submit">Criar jogo</Button>
           <a href={`/corujoes/${id}`}><Button type="button" variant="ghost">Cancelar</Button></a>
         </div>
       </form>

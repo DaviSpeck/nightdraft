@@ -7,7 +7,7 @@ export default async function DashboardPage() {
     prisma.corujao.count(),
     prisma.corujao.findFirst({
       orderBy: { createdAt: 'desc' },
-      include: { game: true, _count: { select: { matches: true } } },
+      include: { game: true, _count: { select: { jogos: true } } },
     }),
   ])
 
@@ -33,7 +33,7 @@ export default async function DashboardPage() {
           <CardContent>
             <p className="text-white font-medium">{lastCorujao.name}</p>
             <p className="text-sm text-white/45 mt-0.5">
-              {lastCorujao._count.matches} partida{lastCorujao._count.matches !== 1 ? 's' : ''} · {lastCorujao.game.name}
+              {lastCorujao._count.jogos} jogo{lastCorujao._count.jogos !== 1 ? 's' : ''} · {lastCorujao.game.name}
             </p>
           </CardContent>
         </Card>

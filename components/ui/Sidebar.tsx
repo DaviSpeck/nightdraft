@@ -9,7 +9,7 @@ const nav = [
   { href: '/corujoes', label: 'Corujões', icon: '🌙' },
   { href: '/players', label: 'Jogadores', icon: '👤' },
   { href: '/maps', label: 'Map Pool', icon: '🗺' },
-  { href: '/games', label: 'Jogos', icon: '🎮' },
+  { href: '/games', label: 'Títulos', icon: '🎮' },
 ]
 
 export default function Sidebar() {

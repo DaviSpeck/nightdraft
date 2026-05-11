@@ -9,24 +9,24 @@ import { DEFAULT_AVATAR } from '@/lib/avatars'
 
 export default async function EditMatchPage({ params }: { params: Promise<{ id: string; matchId: string }> }) {
   const { id: corujaoId, matchId } = await params
-  const match = await prisma.match.findUnique({
+  const jogo = await prisma.jogo.findUnique({
     where: { id: matchId },
     include: {
       corujao: true,
-      members: { include: { player: true } },
+      membros: { include: { player: true } },
     },
   })
-  if (!match) notFound()
+  if (!jogo) notFound()
 
   const action = updateMatch.bind(null, matchId, corujaoId)
-  const isScheduled = match.status === 'SCHEDULED'
+  const isScheduled = jogo.status === 'SCHEDULED'
 
   return (
     <div className="p-6 max-w-lg">
       <PageHeader
-        title={`Editar partida #${match.sequence}`}
+        title={`Editar jogo #${jogo.sequence}`}
         backHref={`/corujoes/${corujaoId}/matches/${matchId}`}
-        backLabel="Partida"
+        backLabel="Jogo"
       />
 
       <form action={action} className="space-y-4">
@@ -34,8 +34,8 @@ export default async function EditMatchPage({ params }: { params: Promise<{ id: 
         <Card>
           <CardHeader><p className="text-sm font-medium text-white/75">Nomes dos times</p></CardHeader>
           <CardContent className="grid grid-cols-2 gap-3">
-            <Input name="nameTeamA" placeholder="Time A" defaultValue={match.nameTeamA ?? ''} label="Time A" />
-            <Input name="nameTeamB" placeholder="Time B" defaultValue={match.nameTeamB ?? ''} label="Time B" />
+            <Input name="nameTeamA" placeholder="Time A" defaultValue={jogo.nameTeamA ?? ''} label="Time A" />
+            <Input name="nameTeamB" placeholder="Time B" defaultValue={jogo.nameTeamB ?? ''} label="Time B" />
           </CardContent>
         </Card>
 
@@ -52,7 +52,7 @@ export default async function EditMatchPage({ params }: { params: Promise<{ id: 
                 <span className="text-accent-red">Time B</span>
               </div>
               <div className="space-y-1">
-                {match.members.map(m => (
+                {jogo.membros.map(m => (
                   <div key={m.playerId} className="grid grid-cols-3 gap-2 items-center py-2 border-b border-white/[0.04] last:border-0">
                     <div className="flex items-center gap-2">
                       <span className="text-base">{m.player.avatar ?? DEFAULT_AVATAR}</span>

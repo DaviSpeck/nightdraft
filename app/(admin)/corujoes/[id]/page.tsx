@@ -16,10 +16,10 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
     include: {
       game: true,
       players: { include: { player: true } },
-      matches: {
+      jogos: {
         orderBy: { sequence: 'asc' },
         include: {
-          members: { include: { player: true } },
+          membros: { include: { player: true } },
           banPicks: { include: { map: true } },
         },
       },
@@ -28,15 +28,15 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
   if (!corujao) notFound()
 
   let winsA = 0, winsB = 0
-  for (const m of corujao.matches) {
-    if (m.status === 'COMPLETED') {
-      if ((m.scoreTeamA ?? 0) > (m.scoreTeamB ?? 0)) winsA++
-      else if ((m.scoreTeamB ?? 0) > (m.scoreTeamA ?? 0)) winsB++
+  for (const j of corujao.jogos) {
+    if (j.status === 'COMPLETED') {
+      if ((j.scoreTeamA ?? 0) > (j.scoreTeamB ?? 0)) winsA++
+      else if ((j.scoreTeamB ?? 0) > (j.scoreTeamA ?? 0)) winsB++
     }
   }
 
-  const teamAName = corujao.matches[0]?.nameTeamA ?? 'Time A'
-  const teamBName = corujao.matches[0]?.nameTeamB ?? 'Time B'
+  const teamAName = corujao.jogos[0]?.nameTeamA ?? 'Time A'
+  const teamBName = corujao.jogos[0]?.nameTeamB ?? 'Time B'
 
   const deleteAction = deleteCorujao.bind(null, id)
 
@@ -58,7 +58,7 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
       />
 
       {/* Placar geral */}
-      {corujao.matches.some(m => m.status === 'COMPLETED') && (
+      {corujao.jogos.some(j => j.status === 'COMPLETED') && (
         <Card>
           <CardContent className="flex items-center justify-center gap-8 py-6">
             <div className="text-center">
@@ -75,62 +75,62 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Partidas */}
+        {/* Jogos */}
         <div className="lg:col-span-2 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white/75">Partidas</h2>
+            <h2 className="text-sm font-semibold text-white/75">Jogos</h2>
             {corujao.status !== 'FINISHED' && (
               <Link href={`/corujoes/${id}/matches/new`}>
-                <Button size="sm">+ Nova partida</Button>
+                <Button size="sm">+ Novo jogo</Button>
               </Link>
             )}
           </div>
 
-          {corujao.matches.length === 0 ? (
+          {corujao.jogos.length === 0 ? (
             <Card>
               <CardContent className="text-center py-8">
-                <p className="text-white/40 text-sm mb-3">Nenhuma partida ainda.</p>
+                <p className="text-white/40 text-sm mb-3">Nenhum jogo ainda.</p>
                 <Link href={`/corujoes/${id}/matches/new`}>
-                  <Button size="sm">Criar primeira partida</Button>
+                  <Button size="sm">Criar primeiro jogo</Button>
                 </Link>
               </CardContent>
             </Card>
           ) : (
-            corujao.matches.map(match => {
-              const teamA = match.members.filter(m => m.side === 'TEAM_A').map(m => m.player.nickname ?? m.player.name)
-              const teamB = match.members.filter(m => m.side === 'TEAM_B').map(m => m.player.nickname ?? m.player.name)
-              const picks = match.banPicks.filter(bp => bp.action === 'PICK' || bp.action === 'DECIDER')
+            corujao.jogos.map(jogo => {
+              const teamA = jogo.membros.filter(m => m.side === 'TEAM_A').map(m => m.player.nickname ?? m.player.name)
+              const teamB = jogo.membros.filter(m => m.side === 'TEAM_B').map(m => m.player.nickname ?? m.player.name)
+              const picks = jogo.banPicks.filter(bp => bp.action === 'PICK' || bp.action === 'DECIDER')
 
               return (
-                <Link key={match.id} href={`/corujoes/${id}/matches/${match.id}`}>
+                <Link key={jogo.id} href={`/corujoes/${id}/matches/${jogo.id}`}>
                   <Card className="hover:border-white/[0.12] transition-colors cursor-pointer">
                     <CardContent className="py-4">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-white/30">#{match.sequence}</span>
-                          <FormatBadge format={match.format} />
-                          <MatchStatusBadge status={match.status} />
+                          <span className="text-xs text-white/30">#{jogo.sequence}</span>
+                          <FormatBadge format={jogo.format} />
+                          <MatchStatusBadge status={jogo.status} />
                         </div>
-                        {match.status === 'SCHEDULED' && (
-                          <Link href={`/corujoes/${id}/matches/${match.id}/ban-pick`} onClick={e => e.stopPropagation()}>
+                        {jogo.status === 'SCHEDULED' && (
+                          <Link href={`/corujoes/${id}/matches/${jogo.id}/ban-pick`} onClick={e => e.stopPropagation()}>
                             <Button size="sm" variant="secondary">Iniciar Ban/Pick →</Button>
                           </Link>
                         )}
-                        {match.status === 'COMPLETED' && (
+                        {jogo.status === 'COMPLETED' && (
                           <span className="text-sm font-bold text-white">
-                            {match.scoreTeamA} – {match.scoreTeamB}
+                            {jogo.scoreTeamA} – {jogo.scoreTeamB}
                           </span>
                         )}
                       </div>
 
                       <div className="flex items-center gap-3 text-xs">
                         <div className="flex-1">
-                          <p className="text-white/40 mb-0.5">{match.nameTeamA ?? 'Time A'}</p>
+                          <p className="text-white/40 mb-0.5">{jogo.nameTeamA ?? 'Time A'}</p>
                           <p className="text-white/70">{teamA.join(', ') || '—'}</p>
                         </div>
                         <span className="text-white/20">vs</span>
                         <div className="flex-1 text-right">
-                          <p className="text-white/40 mb-0.5">{match.nameTeamB ?? 'Time B'}</p>
+                          <p className="text-white/40 mb-0.5">{jogo.nameTeamB ?? 'Time B'}</p>
                           <p className="text-white/70">{teamB.join(', ') || '—'}</p>
                         </div>
                       </div>
@@ -181,7 +181,7 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
       <div className="pt-2 border-t border-white/[0.06]">
         <DeleteButton
           action={deleteAction}
-          confirm={`Excluir "${corujao.name}"? Todas as partidas serão removidas.`}
+          confirm={`Excluir "${corujao.name}"? Todos os jogos serão removidos.`}
           label="Excluir corujão"
         />
       </div>

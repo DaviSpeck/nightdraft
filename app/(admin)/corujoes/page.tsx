@@ -9,8 +9,8 @@ export default async function CorujoesPage() {
     orderBy: { date: 'desc' },
     include: {
       game: { select: { name: true } },
-      _count: { select: { players: true, matches: true } },
-      matches: { select: { status: true } },
+      _count: { select: { players: true, jogos: true } },
+      jogos: { select: { status: true } },
     },
   })
 
@@ -37,7 +37,7 @@ export default async function CorujoesPage() {
       ) : (
         <div className="space-y-2">
           {corujoes.map(c => {
-            const done = c.matches.filter(m => m.status === 'COMPLETED').length
+            const done = c.jogos.filter(j => j.status === 'COMPLETED').length
             return (
               <Link key={c.id} href={`/corujoes/${c.id}`} className="flex items-center justify-between bg-card border border-white/[0.06] rounded-xl px-5 py-4 hover:border-white/[0.12] transition-colors group">
                 <div className="flex items-center gap-4">
@@ -45,8 +45,8 @@ export default async function CorujoesPage() {
                   <div>
                     <p className="text-sm font-semibold text-white group-hover:text-accent-blue transition-colors">{c.name}</p>
                     <p className="text-xs text-white/40 mt-0.5">
-                      {new Date(c.date).toLocaleDateString('pt-BR')} · {c._count.players} jogadores · {c._count.matches} partida{c._count.matches !== 1 ? 's' : ''}
-                      {c._count.matches > 0 && ` (${done} finalizada${done !== 1 ? 's' : ''})`}
+                      {new Date(c.date).toLocaleDateString('pt-BR')} · {c._count.players} jogadores · {c._count.jogos} jogo{c._count.jogos !== 1 ? 's' : ''}
+                      {c._count.jogos > 0 && ` (${done} finalizado${done !== 1 ? 's' : ''})`}
                     </p>
                   </div>
                 </div>
