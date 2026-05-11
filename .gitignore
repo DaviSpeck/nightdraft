@@ -10,12 +10,6 @@ out
 .env.local
 .env.production
 
-# db
-*.db
-*.db-journal
-*.db-shm
-*.db-wal
-
 # os
 .DS_Store
 
