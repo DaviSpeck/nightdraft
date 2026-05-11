@@ -1,8 +1,8 @@
 # NightDraft — Documento de Planejamento
 
-> **Status:** ✅ APROVADO — pronto para execução  
+> **Status:** ✅ FASES 1–5 CONCLUÍDAS  
 > **Data:** 2026-05-11  
-> **Versão:** 1.3 — Deploy local + SQLite confirmado; checklist fechado
+> **Versão:** 1.5 — PostgreSQL (Neon) + terminologia Jogo consolidada
 
 ---
 
