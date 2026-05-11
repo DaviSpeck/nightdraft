@@ -7,6 +7,7 @@ import Card, { CardContent, CardHeader } from '@/components/ui/Card'
 import { FormatBadge, MatchStatusBadge } from '@/components/ui/StatusBadge'
 import { finalizeMatch, deleteMatch, saveMapStats } from '@/actions/matches'
 import { DEFAULT_AVATAR } from '@/lib/avatars'
+import DeleteButton from '@/components/ui/DeleteButton'
 
 export default async function MatchPage({ params }: { params: Promise<{ id: string; matchId: string }> }) {
   const { id: corujaoId, matchId } = await params
@@ -241,17 +242,11 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
 
       {/* Excluir partida */}
       <div className="pt-2 border-t border-white/[0.06]">
-          <form action={deleteAction}>
-            <button
-              type="submit"
-              className="text-xs text-accent-red/50 hover:text-accent-red transition-colors"
-              onClick={e => {
-                if (!confirm('Excluir esta partida? Esta ação não pode ser desfeita.')) e.preventDefault()
-              }}
-            >
-              Excluir partida
-            </button>
-          </form>
+        <DeleteButton
+          action={deleteAction}
+          confirm="Excluir esta partida? Esta ação não pode ser desfeita."
+          label="Excluir partida"
+        />
       </div>
     </div>
   )
