@@ -5,6 +5,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import Card, { CardContent, CardHeader } from '@/components/ui/Card'
 import { CorujaoStatusBadge, FormatBadge, MatchStatusBadge } from '@/components/ui/StatusBadge'
+import { deleteCorujao } from '@/actions/corujoes'
 
 export default async function CorujaoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -161,6 +162,23 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
           </Card>
         </div>
       </div>
+
+      {/* Excluir corujão */}
+      {corujao.status === 'DRAFT' && (
+        <div className="pt-4 border-t border-white/[0.06]">
+          <form action={deleteCorujao.bind(null, id)}>
+            <button
+              type="submit"
+              className="text-xs text-accent-red/50 hover:text-accent-red transition-colors"
+              onClick={e => {
+                if (!confirm(`Excluir "${corujao.name}"? Todas as partidas serão removidas.`)) e.preventDefault()
+              }}
+            >
+              Excluir corujão
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   )
 }

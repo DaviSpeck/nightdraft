@@ -13,7 +13,7 @@ async function main() {
     },
   })
 
-  const maps = [
+  const activeMaps = [
     { name: 'de_mirage', displayName: 'Mirage' },
     { name: 'de_inferno', displayName: 'Inferno' },
     { name: 'de_nuke', displayName: 'Nuke' },
@@ -23,11 +23,28 @@ async function main() {
     { name: 'de_vertigo', displayName: 'Vertigo' },
   ]
 
-  for (const map of maps) {
+  const inactiveMaps = [
+    { name: 'de_cache', displayName: 'Cache' },
+    { name: 'de_overpass', displayName: 'Overpass' },
+    { name: 'de_train', displayName: 'Train' },
+    { name: 'de_cobblestone', displayName: 'Cobblestone' },
+    { name: 'de_office', displayName: 'Office' },
+    { name: 'de_tuscan', displayName: 'Tuscan' },
+  ]
+
+  for (const map of activeMaps) {
     await prisma.map.upsert({
       where: { gameId_name: { gameId: cs.id, name: map.name } },
       update: {},
       create: { ...map, gameId: cs.id, isActive: true },
+    })
+  }
+
+  for (const map of inactiveMaps) {
+    await prisma.map.upsert({
+      where: { gameId_name: { gameId: cs.id, name: map.name } },
+      update: {},
+      create: { ...map, gameId: cs.id, isActive: false },
     })
   }
 
@@ -52,7 +69,7 @@ async function main() {
     })
   }
 
-  console.log(`✅ Seed concluído: ${cs.name}, ${maps.length} mapas, ${players.length} jogadores`)
+  console.log(`✅ Seed concluído: ${cs.name}, ${activeMaps.length + inactiveMaps.length} mapas, ${players.length} jogadores`)
 }
 
 main()

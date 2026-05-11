@@ -34,3 +34,9 @@ export async function createCorujao(formData: FormData) {
   revalidatePath('/corujoes')
   redirect(`/corujoes/${corujao.id}`)
 }
+
+export async function deleteCorujao(corujaoId: string) {
+  await prisma.corujao.delete({ where: { id: corujaoId } })
+  revalidatePath('/corujoes')
+  redirect('/corujoes')
+}

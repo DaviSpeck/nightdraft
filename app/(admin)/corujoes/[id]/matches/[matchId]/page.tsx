@@ -5,7 +5,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import Card, { CardContent, CardHeader } from '@/components/ui/Card'
 import { FormatBadge, MatchStatusBadge } from '@/components/ui/StatusBadge'
-import { finalizeMatch } from '@/actions/matches'
+import { finalizeMatch, deleteMatch, saveMapStats } from '@/actions/matches'
 
 export default async function MatchPage({ params }: { params: Promise<{ id: string; matchId: string }> }) {
   const { id: corujaoId, matchId } = await params
@@ -15,17 +15,22 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       corujao: true,
       members: { include: { player: true } },
       banPicks: { orderBy: { order: 'asc' }, include: { map: true } },
+      mapStats: true,
     },
   })
   if (!match) notFound()
 
-  const teamA = match.members.filter(m => m.side === 'TEAM_A')
-  const teamB = match.members.filter(m => m.side === 'TEAM_B')
-  const picks  = match.banPicks.filter(bp => bp.action === 'PICK' || bp.action === 'DECIDER')
+  const teamA  = match.members.filter(m => m.side === 'TEAM_A')
+  const teamB  = match.members.filter(m => m.side === 'TEAM_B')
+  const picks  = match.banPicks.filter(bp => bp.action === 'PICK')
+  const decider = match.banPicks.find(bp => bp.action === 'DECIDER')
   const bansA  = match.banPicks.filter(bp => bp.action === 'BAN' && bp.side === 'TEAM_A')
   const bansB  = match.banPicks.filter(bp => bp.action === 'BAN' && bp.side === 'TEAM_B')
 
-  const action = finalizeMatch.bind(null, matchId, corujaoId)
+  const allPicks = [...picks, ...(decider ? [decider] : [])]
+
+  const finalizeAction = finalizeMatch.bind(null, matchId, corujaoId)
+  const deleteAction   = deleteMatch.bind(null, matchId, corujaoId)
 
   return (
     <div className="p-6 max-w-2xl space-y-4">
@@ -71,13 +76,24 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         </Card>
       ) : (
         <>
+          {/* Decider destaque */}
+          {decider && (
+            <div className="rounded-xl border border-accent-yellow/40 bg-accent-yellow/10 px-5 py-4 flex items-center gap-4">
+              <span className="text-accent-yellow text-2xl">★</span>
+              <div>
+                <p className="text-[10px] text-accent-yellow/60 font-semibold uppercase tracking-wider">Mapa Decisivo</p>
+                <p className="text-lg font-bold text-accent-yellow">{decider.map.displayName}</p>
+              </div>
+            </div>
+          )}
+
           {picks.length > 0 && (
             <Card>
               <CardHeader><p className="text-xs font-semibold text-white/60">Mapas escolhidos</p></CardHeader>
               <CardContent className="flex flex-wrap gap-2 py-3">
                 {picks.map(bp => (
-                  <span key={bp.id} className={`text-xs px-3 py-1.5 rounded-lg font-semibold ${bp.action === 'DECIDER' ? 'bg-accent-yellow/10 text-accent-yellow' : 'bg-accent-blue/10 text-accent-blue'}`}>
-                    {bp.map.displayName} {bp.action === 'DECIDER' && '★'}
+                  <span key={bp.id} className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-accent-blue/10 text-accent-blue">
+                    {bp.map.displayName}
                   </span>
                 ))}
               </CardContent>
@@ -106,12 +122,83 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         </>
       )}
 
+      {/* KDA por mapa */}
+      {allPicks.length > 0 && match.status !== 'SCHEDULED' && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-white/75">
+            KDA por mapa
+            <span className="ml-2 text-[10px] font-normal text-white/30">K / D / A</span>
+          </h2>
+          {allPicks.map(bp => {
+            const saveAction = saveMapStats.bind(null, matchId, corujaoId, bp.mapId)
+            const existingStats = match.mapStats.filter(s => s.mapId === bp.mapId)
+
+            return (
+              <Card key={bp.id} className={bp.action === 'DECIDER' ? 'border-accent-yellow/20' : ''}>
+                <CardHeader>
+                  <p className="text-xs font-semibold text-white/60">
+                    {bp.map.displayName}
+                    {bp.action === 'DECIDER' && <span className="ml-1.5 text-accent-yellow">★ Decisivo</span>}
+                  </p>
+                </CardHeader>
+                <CardContent className="py-3">
+                  <form action={saveAction}>
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-2 items-center mb-3">
+                      <p className="text-[10px] text-white/30 font-semibold uppercase">Jogador</p>
+                      <p className="text-[10px] text-accent-green/70 font-semibold w-12 text-center">K</p>
+                      <p className="text-[10px] text-accent-red/70 font-semibold w-12 text-center">D</p>
+                      <p className="text-[10px] text-accent-blue/70 font-semibold w-12 text-center">A</p>
+
+                      {match.members.map(member => {
+                        const stat = existingStats.find(s => s.playerId === member.playerId)
+                        return (
+                          <>
+                            <p key={`name_${member.id}`} className="text-sm text-white">
+                              {member.player.nickname ?? member.player.name}
+                              <span className={`ml-1.5 text-[10px] ${member.side === 'TEAM_A' ? 'text-accent-blue/50' : 'text-accent-red/50'}`}>
+                                {member.side === 'TEAM_A' ? match.nameTeamA ?? 'A' : match.nameTeamB ?? 'B'}
+                              </span>
+                            </p>
+                            <input
+                              key={`k_${member.id}`}
+                              name={`kills_${member.playerId}_${bp.mapId}`}
+                              type="number" min="0" max="99"
+                              defaultValue={stat?.kills ?? 0}
+                              className="w-12 bg-surface border border-white/[0.08] rounded px-1 py-1 text-center text-sm text-white focus:outline-none focus:border-accent-green"
+                            />
+                            <input
+                              key={`d_${member.id}`}
+                              name={`deaths_${member.playerId}_${bp.mapId}`}
+                              type="number" min="0" max="99"
+                              defaultValue={stat?.deaths ?? 0}
+                              className="w-12 bg-surface border border-white/[0.08] rounded px-1 py-1 text-center text-sm text-white focus:outline-none focus:border-accent-red"
+                            />
+                            <input
+                              key={`a_${member.id}`}
+                              name={`assists_${member.playerId}_${bp.mapId}`}
+                              type="number" min="0" max="99"
+                              defaultValue={stat?.assists ?? 0}
+                              className="w-12 bg-surface border border-white/[0.08] rounded px-1 py-1 text-center text-sm text-white focus:outline-none focus:border-accent-blue"
+                            />
+                          </>
+                        )
+                      })}
+                    </div>
+                    <Button type="submit" size="sm" variant="ghost">Salvar KDA</Button>
+                  </form>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
+
       {/* Resultado */}
       {match.status === 'ONGOING' && (
         <Card>
           <CardHeader><p className="text-sm font-medium text-white/75">Registrar resultado</p></CardHeader>
           <CardContent>
-            <form action={action} className="flex items-center gap-3">
+            <form action={finalizeAction} className="flex items-center gap-3">
               <div className="flex-1">
                 <p className="text-xs text-white/40 mb-1">{match.nameTeamA ?? 'Time A'}</p>
                 <input name="scoreTeamA" type="number" min="0" max="30" defaultValue="0"
@@ -143,6 +230,23 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Excluir partida */}
+      {match.status === 'SCHEDULED' && (
+        <div className="pt-2 border-t border-white/[0.06]">
+          <form action={deleteAction}>
+            <button
+              type="submit"
+              className="text-xs text-accent-red/60 hover:text-accent-red transition-colors"
+              onClick={e => {
+                if (!confirm('Excluir esta partida?')) e.preventDefault()
+              }}
+            >
+              Excluir partida
+            </button>
+          </form>
+        </div>
       )}
     </div>
   )

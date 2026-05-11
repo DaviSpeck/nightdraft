@@ -34,6 +34,7 @@ model Player {
 
   corujoes   CorujaoPlayer[]
   matchSlots MatchTeamMember[]
+  mapStats   MatchMapStat[]
 }
 
 // ─── MAPA ─────────────────────────────────────────────
@@ -45,9 +46,10 @@ model Map {
   imageUrl    String?
   isActive    Boolean @default(true)
 
-  gameId   String
-  game     Game      @relation(fields: [gameId], references: [id])
-  banPicks BanPick[]
+  gameId    String
+  game      Game           @relation(fields: [gameId], references: [id])
+  banPicks  BanPick[]
+  mapStats  MatchMapStat[]
 
   @@unique([gameId, name])
 }
@@ -95,8 +97,9 @@ model Match {
   corujaoId String
   corujao   Corujao @relation(fields: [corujaoId], references: [id], onDelete: Cascade)
 
-  members  MatchTeamMember[]
-  banPicks BanPick[]
+  members   MatchTeamMember[]
+  banPicks  BanPick[]
+  mapStats  MatchMapStat[]
 
   @@unique([corujaoId, sequence])
 }
@@ -110,6 +113,22 @@ model MatchTeamMember {
   player   Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([matchId, playerId])
+}
+
+model MatchMapStat {
+  id      String @id @default(cuid())
+  kills   Int    @default(0)
+  deaths  Int    @default(0)
+  assists Int    @default(0)
+
+  matchId  String
+  mapId    String
+  playerId String
+  match    Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  map      Map    @relation(fields: [mapId], references: [id])
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, mapId, playerId])
 }
 
 // ─── BAN/PICK ─────────────────────────────────────────

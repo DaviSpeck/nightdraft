@@ -26,12 +26,6 @@ const sideColor = {
   TEAM_B: 'text-accent-red  border-accent-red',
 }
 
-const actionLabel: Record<string, string> = {
-  BAN: 'BAN',
-  PICK: 'PICK',
-  DECIDER: 'DECISIVO',
-}
-
 export default function BanPickBoard({
   matchId, corujaoId, format, nameTeamA, nameTeamB,
   allMaps, banPicks, currentStep, stepIndex, totalSteps, done,
@@ -45,12 +39,13 @@ export default function BanPickBoard({
     startTransition(() => submitBanPick(matchId, corujaoId, mapId))
   }
 
-  const bansA  = banPicks.filter(bp => bp.action === 'BAN'  && bp.side === 'TEAM_A')
-  const bansB  = banPicks.filter(bp => bp.action === 'BAN'  && bp.side === 'TEAM_B')
-  const picksA = banPicks.filter(bp => (bp.action === 'PICK' || bp.action === 'DECIDER') && bp.side === 'TEAM_A')
-  const picksB = banPicks.filter(bp => (bp.action === 'PICK' || bp.action === 'DECIDER') && bp.side === 'TEAM_B')
+  const bansA   = banPicks.filter(bp => bp.action === 'BAN'   && bp.side === 'TEAM_A')
+  const bansB   = banPicks.filter(bp => bp.action === 'BAN'   && bp.side === 'TEAM_B')
+  const picksA  = banPicks.filter(bp => bp.action === 'PICK'  && bp.side === 'TEAM_A')
+  const picksB  = banPicks.filter(bp => bp.action === 'PICK'  && bp.side === 'TEAM_B')
   const decider = banPicks.find(bp => bp.action === 'DECIDER')
 
+  const isDeciderStep = currentStep?.action === 'DECIDER'
   const teamName = (side: MatchSide | null) => side === 'TEAM_A' ? nameTeamA : side === 'TEAM_B' ? nameTeamB : '—'
 
   return (
@@ -74,14 +69,14 @@ export default function BanPickBoard({
 
       {/* Current step indicator */}
       {!done && currentStep ? (
-        <div className="px-6 py-5 text-center border-b border-white/[0.06] bg-surface">
-          <p className={`text-lg font-bold ${currentStep.side ? sideColor[currentStep.side].split(' ')[0] : 'text-accent-yellow'}`}>
-            {currentStep.action === 'DECIDER'
+        <div className={`px-6 py-5 text-center border-b border-white/[0.06] ${isDeciderStep ? 'bg-accent-yellow/5' : 'bg-surface'}`}>
+          <p className={`text-lg font-bold ${isDeciderStep ? 'text-accent-yellow' : currentStep.side ? sideColor[currentStep.side].split(' ')[0] : 'text-white'}`}>
+            {isDeciderStep
               ? '★ Mapa Decisivo — último mapa restante'
               : stepLabel(currentStep, nameTeamA, nameTeamB)}
           </p>
           <p className="text-xs text-white/40 mt-1">
-            {currentStep.action === 'DECIDER'
+            {isDeciderStep
               ? 'Confirme o mapa decisivo'
               : currentStep.action === 'BAN'
               ? 'Clique no mapa para banir'
@@ -95,8 +90,19 @@ export default function BanPickBoard({
         </div>
       ) : null}
 
+      {/* Decider banner */}
+      {decider && (
+        <div className="mx-6 mt-4 rounded-xl border border-accent-yellow/30 bg-accent-yellow/10 px-5 py-3 flex items-center gap-3">
+          <span className="text-accent-yellow text-xl">★</span>
+          <div>
+            <p className="text-xs text-accent-yellow/60 font-semibold uppercase tracking-wider">Mapa Decisivo</p>
+            <p className="text-base font-bold text-accent-yellow">{decider.map.displayName}</p>
+          </div>
+        </div>
+      )}
+
       {/* Board */}
-      <div className="flex flex-1 gap-0">
+      <div className="flex flex-1 gap-0 mt-4">
         {/* Team A */}
         <div className="w-44 border-r border-white/[0.06] p-4 space-y-4">
           <p className="text-xs font-semibold text-accent-blue uppercase tracking-wider">{nameTeamA}</p>
@@ -105,7 +111,7 @@ export default function BanPickBoard({
               <p className="text-[10px] text-white/30 mb-1.5">PICKS</p>
               {picksA.map(bp => (
                 <div key={bp.id} className="text-xs text-white font-medium bg-accent-blue/10 border border-accent-blue/20 rounded px-2 py-1 mb-1">
-                  {bp.map.displayName} {bp.action === 'DECIDER' && '★'}
+                  {bp.map.displayName}
                 </div>
               ))}
             </div>
@@ -125,11 +131,12 @@ export default function BanPickBoard({
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 max-w-xl mx-auto">
             {allMaps.map(map => {
               const bp = banPicks.find(b => b.mapId === map.id)
-              const isBanned  = bp?.action === 'BAN'
-              const isPicked  = bp?.action === 'PICK'
-              const isDecider = bp?.action === 'DECIDER'
-              const isAvailable = !usedMapIds.has(map.id) && !done
-              const isCurrent = isAvailable && !isPending
+              const isBanned    = bp?.action === 'BAN'
+              const isPicked    = bp?.action === 'PICK'
+              const isDeciderMap = bp?.action === 'DECIDER'
+              const isAvailable  = !usedMapIds.has(map.id) && !done
+              const isCurrent    = isAvailable && !isPending
+              const isDeciderCandidate = isDeciderStep && isAvailable
 
               return (
                 <button
@@ -141,8 +148,10 @@ export default function BanPickBoard({
                       ? 'opacity-30 border-white/[0.04] cursor-not-allowed bg-white/[0.02]'
                       : isPicked
                       ? 'border-accent-blue/40 bg-accent-blue/10 -translate-y-1'
-                      : isDecider
-                      ? 'border-accent-yellow/40 bg-accent-yellow/10 -translate-y-1'
+                      : isDeciderMap
+                      ? 'border-accent-yellow/60 bg-accent-yellow/15 -translate-y-1 ring-2 ring-accent-yellow/30'
+                      : isDeciderCandidate
+                      ? 'border-accent-yellow/50 bg-accent-yellow/10 hover:border-accent-yellow hover:bg-accent-yellow/20 cursor-pointer scale-105 shadow-lg shadow-accent-yellow/10'
                       : isCurrent
                       ? 'border-white/[0.08] bg-card hover:border-accent-blue hover:bg-accent-blue/5 cursor-pointer'
                       : 'border-white/[0.06] bg-card cursor-not-allowed'
@@ -154,13 +163,14 @@ export default function BanPickBoard({
                     </div>
                   )}
                   <p className={`text-xs font-semibold ${
-                    isBanned ? 'text-white/20' : isPicked ? 'text-accent-blue' : isDecider ? 'text-accent-yellow' : 'text-white'
+                    isBanned ? 'text-white/20' : isPicked ? 'text-accent-blue' : isDeciderMap || isDeciderCandidate ? 'text-accent-yellow' : 'text-white'
                   }`}>
                     {map.displayName}
                   </p>
                   {isPicked && <p className="text-[9px] text-accent-blue/70 mt-0.5">PICK</p>}
-                  {isDecider && <p className="text-[9px] text-accent-yellow/70 mt-0.5">DECISIVO</p>}
+                  {isDeciderMap && <p className="text-[9px] text-accent-yellow/70 mt-0.5 font-bold">★ DECISIVO</p>}
                   {isBanned && <p className="text-[9px] text-white/20 mt-0.5">BAN</p>}
+                  {isDeciderCandidate && <p className="text-[9px] text-accent-yellow/60 mt-0.5">confirmar</p>}
                 </button>
               )
             })}
@@ -175,7 +185,7 @@ export default function BanPickBoard({
               <p className="text-[10px] text-white/30 mb-1.5 text-right">PICKS</p>
               {picksB.map(bp => (
                 <div key={bp.id} className="text-xs text-white font-medium bg-accent-red/10 border border-accent-red/20 rounded px-2 py-1 mb-1 text-right">
-                  {bp.action === 'DECIDER' && '★ '}{bp.map.displayName}
+                  {bp.map.displayName}
                 </div>
               ))}
             </div>

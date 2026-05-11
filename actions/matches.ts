@@ -73,3 +73,39 @@ export async function finalizeMatch(matchId: string, corujaoId: string, formData
   revalidatePath(`/corujoes/${corujaoId}`)
   redirect(`/corujoes/${corujaoId}`)
 }
+
+export async function deleteMatch(matchId: string, corujaoId: string) {
+  await prisma.match.delete({ where: { id: matchId } })
+  revalidatePath(`/corujoes/${corujaoId}`)
+  redirect(`/corujoes/${corujaoId}`)
+}
+
+const StatRowSchema = z.object({
+  kills: z.coerce.number().int().min(0).default(0),
+  deaths: z.coerce.number().int().min(0).default(0),
+  assists: z.coerce.number().int().min(0).default(0),
+})
+
+export async function saveMapStats(matchId: string, corujaoId: string, mapId: string, formData: FormData) {
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: { members: { include: { player: true } } },
+  })
+  if (!match) throw new Error('Partida não encontrada')
+
+  const upserts = match.members.map(member => {
+    const parsed = StatRowSchema.parse({
+      kills: formData.get(`kills_${member.playerId}_${mapId}`),
+      deaths: formData.get(`deaths_${member.playerId}_${mapId}`),
+      assists: formData.get(`assists_${member.playerId}_${mapId}`),
+    })
+    return prisma.matchMapStat.upsert({
+      where: { matchId_mapId_playerId: { matchId, mapId, playerId: member.playerId } },
+      update: parsed,
+      create: { matchId, mapId, playerId: member.playerId, ...parsed },
+    })
+  })
+
+  await prisma.$transaction(upserts)
+  revalidatePath(`/corujoes/${corujaoId}/matches/${matchId}`)
+}

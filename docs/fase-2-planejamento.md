@@ -1,6 +1,6 @@
 # Fase 2 — Features Core
 
-> **Status:** Aguardando aprovação  
+> **Status:** ✅ Concluída  
 > **Data:** 2026-05-11
 
 ---
@@ -181,13 +181,13 @@ const sequences: Record<MatchFormat, BanPickStep[]> = {
 
 ## Critérios de conclusão
 
-- [ ] Cadastrar um jogador e vê-lo na listagem
-- [ ] Ativar/desativar mapa no Map Pool
-- [ ] Criar um corujão com nome, data e jogadores
-- [ ] Criar uma partida MD3 dentro do corujão com os times montados
-- [ ] Executar ban/pick completo do MD3 (7 steps)
-- [ ] Registrar placar e ver o resultado na tela do corujão
-- [ ] Status do corujão atualiza automaticamente para FINISHED
+- [x] Cadastrar um jogador e vê-lo na listagem
+- [x] Ativar/desativar mapa no Map Pool
+- [x] Criar um corujão com nome, data e jogadores
+- [x] Criar uma partida MD3 dentro do corujão com os times montados
+- [x] Executar ban/pick completo do MD3 (7 steps)
+- [x] Registrar placar e ver o resultado na tela do corujão
+- [x] Status do corujão atualiza automaticamente para FINISHED
 
 ---
 
