@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Card, { CardContent, CardHeader } from '@/components/ui/Card'
 import { createMatch } from '@/actions/matches'
+import { DEFAULT_AVATAR } from '@/lib/avatars'
 
 export default async function NewMatchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -65,9 +66,12 @@ export default async function NewMatchPage({ params }: { params: Promise<{ id: s
             <div className="space-y-1">
               {corujao.players.map(cp => (
                 <div key={cp.playerId} className="grid grid-cols-3 gap-2 items-center py-2 border-b border-white/[0.04] last:border-0">
-                  <div>
-                    <p className="text-sm text-white">{cp.player.nickname ?? cp.player.name}</p>
-                    {cp.player.nickname && <p className="text-[10px] text-white/30">{cp.player.name}</p>}
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{cp.player.avatar ?? DEFAULT_AVATAR}</span>
+                    <div>
+                      <p className="text-sm text-white">{cp.player.nickname ?? cp.player.name}</p>
+                      {cp.player.nickname && <p className="text-[10px] text-white/30">{cp.player.name}</p>}
+                    </div>
                   </div>
                   <label className="flex justify-center cursor-pointer">
                     <input type="radio" name={`player_${cp.playerId}`} value="TEAM_A" defaultChecked className="w-4 h-4 accent-accent-blue" />

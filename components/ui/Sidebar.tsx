@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import Logo from './Logo'
 
 const nav = [
   { href: '/dashboard', label: 'Dashboard', icon: '⊞' },
@@ -23,9 +24,12 @@ export default function Sidebar() {
 
   return (
     <aside className="w-56 shrink-0 flex flex-col bg-surface border-r border-white/[0.06] min-h-screen">
-      <div className="px-4 py-5 border-b border-white/[0.06]">
-        <span className="text-base font-bold text-white tracking-tight">NightDraft</span>
-        <span className="ml-2 text-[10px] font-medium text-accent-blue bg-accent-blue/10 px-1.5 py-0.5 rounded">CS</span>
+      <div className="px-4 py-5 border-b border-white/[0.06] flex items-center gap-2.5">
+        <Logo size={24} />
+        <div>
+          <span className="text-sm font-bold text-white tracking-tight">NightDraft</span>
+          <span className="ml-1.5 text-[9px] font-semibold text-accent-blue bg-accent-blue/10 px-1.5 py-0.5 rounded align-middle">CS</span>
+        </div>
       </div>
 
       <nav className="flex-1 px-2 py-3 space-y-0.5">

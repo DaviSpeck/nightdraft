@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button'
 import Card, { CardContent, CardHeader } from '@/components/ui/Card'
 import { CorujaoStatusBadge, FormatBadge, MatchStatusBadge } from '@/components/ui/StatusBadge'
 import { deleteCorujao } from '@/actions/corujoes'
+import { DEFAULT_AVATAR } from '@/lib/avatars'
 
 export default async function CorujaoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -25,7 +26,6 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
   })
   if (!corujao) notFound()
 
-  // Placar geral da noite
   let winsA = 0, winsB = 0
   for (const m of corujao.matches) {
     if (m.status === 'COMPLETED') {
@@ -37,6 +37,8 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
   const teamAName = corujao.matches[0]?.nameTeamA ?? 'Time A'
   const teamBName = corujao.matches[0]?.nameTeamB ?? 'Time B'
 
+  const deleteAction = deleteCorujao.bind(null, id)
+
   return (
     <div className="p-6 space-y-5">
       <PageHeader
@@ -44,7 +46,14 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
         subtitle={`${new Date(corujao.date).toLocaleDateString('pt-BR')} · ${corujao.game.name}`}
         backHref="/corujoes"
         backLabel="Corujões"
-        action={<CorujaoStatusBadge status={corujao.status} />}
+        action={
+          <div className="flex items-center gap-2">
+            <Link href={`/corujoes/${id}/edit`}>
+              <Button variant="ghost" size="sm">Editar</Button>
+            </Link>
+            <CorujaoStatusBadge status={corujao.status} />
+          </div>
+        }
       />
 
       {/* Placar geral */}
@@ -128,8 +137,12 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
                       {picks.length > 0 && (
                         <div className="flex gap-1.5 mt-3 flex-wrap">
                           {picks.map(bp => (
-                            <span key={bp.id} className="text-[10px] bg-accent-blue/10 text-accent-blue px-2 py-0.5 rounded font-medium">
-                              {bp.map.displayName}
+                            <span key={bp.id} className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+                              bp.action === 'DECIDER'
+                                ? 'bg-accent-yellow/10 text-accent-yellow'
+                                : 'bg-accent-blue/10 text-accent-blue'
+                            }`}>
+                              {bp.action === 'DECIDER' && '★ '}{bp.map.displayName}
                             </span>
                           ))}
                         </div>
@@ -149,8 +162,8 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
             <CardContent className="py-3 space-y-1">
               {corujao.players.map(cp => (
                 <div key={cp.playerId} className="flex items-center gap-2.5 py-1.5">
-                  <div className="w-6 h-6 rounded-full bg-accent-blue/10 flex items-center justify-center text-[10px] font-bold text-accent-blue">
-                    {cp.player.name.charAt(0)}
+                  <div className="w-8 h-8 rounded-xl bg-accent-blue/10 flex items-center justify-center text-lg">
+                    {cp.player.avatar ?? DEFAULT_AVATAR}
                   </div>
                   <div>
                     <p className="text-xs font-medium text-white">{cp.player.name}</p>
@@ -164,21 +177,19 @@ export default async function CorujaoPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Excluir corujão */}
-      {corujao.status === 'DRAFT' && (
-        <div className="pt-4 border-t border-white/[0.06]">
-          <form action={deleteCorujao.bind(null, id)}>
-            <button
-              type="submit"
-              className="text-xs text-accent-red/50 hover:text-accent-red transition-colors"
-              onClick={e => {
-                if (!confirm(`Excluir "${corujao.name}"? Todas as partidas serão removidas.`)) e.preventDefault()
-              }}
-            >
-              Excluir corujão
-            </button>
-          </form>
-        </div>
-      )}
+      <div className="pt-2 border-t border-white/[0.06]">
+        <form action={deleteAction}>
+          <button
+            type="submit"
+            className="text-xs text-accent-red/50 hover:text-accent-red transition-colors"
+            onClick={e => {
+              if (!confirm(`Excluir "${corujao.name}"? Todas as partidas serão removidas.`)) e.preventDefault()
+            }}
+          >
+            Excluir corujão
+          </button>
+        </form>
+      </div>
     </div>
   )
 }

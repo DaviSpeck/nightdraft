@@ -8,12 +8,14 @@ import { z } from 'zod'
 const Schema = z.object({
   name: z.string().min(1, 'Nome obrigatório'),
   nickname: z.string().optional(),
+  avatar: z.string().optional(),
 })
 
 export async function createPlayer(formData: FormData) {
   const parsed = Schema.safeParse({
     name: formData.get('name'),
     nickname: formData.get('nickname') || undefined,
+    avatar: formData.get('avatar') || undefined,
   })
   if (!parsed.success) throw new Error(parsed.error.errors[0].message)
   await prisma.player.create({ data: parsed.data })
@@ -25,6 +27,7 @@ export async function updatePlayer(id: string, formData: FormData) {
   const parsed = Schema.safeParse({
     name: formData.get('name'),
     nickname: formData.get('nickname') || undefined,
+    avatar: formData.get('avatar') || undefined,
   })
   if (!parsed.success) throw new Error(parsed.error.errors[0].message)
   await prisma.player.update({ where: { id }, data: parsed.data })

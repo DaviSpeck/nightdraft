@@ -2,6 +2,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Card, { CardContent } from '@/components/ui/Card'
+import AvatarPicker from '@/components/ui/AvatarPicker'
 import { createPlayer } from '@/actions/players'
 
 export default function NewPlayerPage() {
@@ -11,6 +12,7 @@ export default function NewPlayerPage() {
       <Card>
         <CardContent className="space-y-4">
           <form action={createPlayer} className="space-y-4">
+            <AvatarPicker />
             <Input label="Nome *" name="name" placeholder="Gabriel Silva" required autoFocus />
             <Input label="Nickname" name="nickname" placeholder="FalleN" />
             <div className="pt-2 flex gap-2">

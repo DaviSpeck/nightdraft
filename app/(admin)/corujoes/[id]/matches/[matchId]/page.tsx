@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button'
 import Card, { CardContent, CardHeader } from '@/components/ui/Card'
 import { FormatBadge, MatchStatusBadge } from '@/components/ui/StatusBadge'
 import { finalizeMatch, deleteMatch, saveMapStats } from '@/actions/matches'
+import { DEFAULT_AVATAR } from '@/lib/avatars'
 
 export default async function MatchPage({ params }: { params: Promise<{ id: string; matchId: string }> }) {
   const { id: corujaoId, matchId } = await params
@@ -13,7 +14,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
     where: { id: matchId },
     include: {
       corujao: true,
-      members: { include: { player: true } },
+      members: { include: { player: true }, orderBy: { side: 'asc' } },
       banPicks: { orderBy: { order: 'asc' }, include: { map: true } },
       mapStats: true,
     },
@@ -41,6 +42,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         backLabel={match.corujao.name}
         action={
           <div className="flex items-center gap-2">
+            <Link href={`/corujoes/${corujaoId}/matches/${matchId}/edit`}>
+              <Button variant="ghost" size="sm">Editar</Button>
+            </Link>
             <FormatBadge format={match.format} />
             <MatchStatusBadge status={match.status} />
           </div>
@@ -57,7 +61,10 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             <CardHeader><p className="text-xs font-semibold text-white/60">{team.label}</p></CardHeader>
             <CardContent className="py-3 space-y-1.5">
               {team.members.map(m => (
-                <p key={m.id} className="text-sm text-white">{m.player.nickname ?? m.player.name}</p>
+                <div key={m.id} className="flex items-center gap-2">
+                  <span className="text-base">{m.player.avatar ?? DEFAULT_AVATAR}</span>
+                  <p className="text-sm text-white">{m.player.nickname ?? m.player.name}</p>
+                </div>
               ))}
             </CardContent>
           </Card>
@@ -233,21 +240,19 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       )}
 
       {/* Excluir partida */}
-      {match.status === 'SCHEDULED' && (
-        <div className="pt-2 border-t border-white/[0.06]">
+      <div className="pt-2 border-t border-white/[0.06]">
           <form action={deleteAction}>
             <button
               type="submit"
-              className="text-xs text-accent-red/60 hover:text-accent-red transition-colors"
+              className="text-xs text-accent-red/50 hover:text-accent-red transition-colors"
               onClick={e => {
-                if (!confirm('Excluir esta partida?')) e.preventDefault()
+                if (!confirm('Excluir esta partida? Esta ação não pode ser desfeita.')) e.preventDefault()
               }}
             >
               Excluir partida
             </button>
           </form>
-        </div>
-      )}
+      </div>
     </div>
   )
 }

@@ -52,6 +52,41 @@ export async function createMatch(corujaoId: string, formData: FormData) {
   redirect(`/corujoes/${corujaoId}/matches/${match.id}`)
 }
 
+export async function updateMatch(matchId: string, corujaoId: string, formData: FormData) {
+  const match = await prisma.match.findUnique({ where: { id: matchId } })
+  if (!match) throw new Error('Partida não encontrada')
+
+  const nameTeamA = (formData.get('nameTeamA') as string) || null
+  const nameTeamB = (formData.get('nameTeamB') as string) || null
+
+  await prisma.$transaction(async (tx) => {
+    await tx.match.update({
+      where: { id: matchId },
+      data: { nameTeamA, nameTeamB },
+    })
+
+    // Only reassign sides if match hasn't started yet
+    if (match.status === 'SCHEDULED') {
+      const corujaoPlayers = await tx.corujaoPlayer.findMany({
+        where: { corujaoId },
+        select: { playerId: true },
+      })
+      for (const { playerId } of corujaoPlayers) {
+        const side = formData.get(`player_${playerId}`) as string
+        if (side === 'TEAM_A' || side === 'TEAM_B') {
+          await tx.matchTeamMember.updateMany({
+            where: { matchId, playerId },
+            data: { side },
+          })
+        }
+      }
+    }
+  })
+
+  revalidatePath(`/corujoes/${corujaoId}/matches/${matchId}`)
+  redirect(`/corujoes/${corujaoId}/matches/${matchId}`)
+}
+
 export async function finalizeMatch(matchId: string, corujaoId: string, formData: FormData) {
   const scoreA = parseInt(formData.get('scoreTeamA') as string)
   const scoreB = parseInt(formData.get('scoreTeamB') as string)

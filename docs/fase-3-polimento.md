@@ -1,6 +1,6 @@
 # Fase 3 — Polimento & Detalhes
 
-> **Status:** ✅ Concluída  
+> **Status:** ✅ Concluída (ver também [fase-4-identidade-e-crud.md](fase-4-identidade-e-crud.md))  
 > **Data:** 2026-05-11
 
 ---

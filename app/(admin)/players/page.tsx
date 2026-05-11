@@ -4,6 +4,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import Card, { CardContent } from '@/components/ui/Card'
 import { deletePlayer } from '@/actions/players'
+import { DEFAULT_AVATAR } from '@/lib/avatars'
 
 export default async function PlayersPage() {
   const players = await prisma.player.findMany({ orderBy: { name: 'asc' } })
@@ -34,8 +35,8 @@ export default async function PlayersPage() {
           {players.map(player => (
             <div key={player.id} className="flex items-center justify-between bg-card border border-white/[0.06] rounded-xl px-5 py-3.5">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-accent-blue/10 flex items-center justify-center text-sm font-bold text-accent-blue">
-                  {player.name.charAt(0).toUpperCase()}
+                <div className="w-9 h-9 rounded-xl bg-accent-blue/10 flex items-center justify-center text-xl">
+                  {player.avatar ?? DEFAULT_AVATAR}
                 </div>
                 <div>
                   <p className="text-sm font-medium text-white">{player.name}</p>

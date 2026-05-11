@@ -4,6 +4,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Card, { CardContent } from '@/components/ui/Card'
+import AvatarPicker from '@/components/ui/AvatarPicker'
 import { updatePlayer } from '@/actions/players'
 
 export default async function EditPlayerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,6 +20,7 @@ export default async function EditPlayerPage({ params }: { params: Promise<{ id:
       <Card>
         <CardContent>
           <form action={action} className="space-y-4">
+            <AvatarPicker defaultValue={player.avatar} />
             <Input label="Nome *" name="name" defaultValue={player.name} required autoFocus />
             <Input label="Nickname" name="nickname" defaultValue={player.nickname ?? ''} />
             <div className="pt-2 flex gap-2">

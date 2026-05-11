@@ -12,6 +12,11 @@ const Schema = z.object({
   playerIds: z.array(z.string()).min(2, 'Selecione ao menos 2 jogadores'),
 })
 
+const UpdateSchema = z.object({
+  name: z.string().min(1, 'Nome obrigatório'),
+  date: z.string().min(1, 'Data obrigatória'),
+})
+
 export async function createCorujao(formData: FormData) {
   const playerIds = formData.getAll('playerIds').map(String)
   const parsed = Schema.safeParse({
@@ -33,6 +38,22 @@ export async function createCorujao(formData: FormData) {
   })
   revalidatePath('/corujoes')
   redirect(`/corujoes/${corujao.id}`)
+}
+
+export async function updateCorujao(corujaoId: string, formData: FormData) {
+  const parsed = UpdateSchema.safeParse({
+    name: formData.get('name'),
+    date: formData.get('date'),
+  })
+  if (!parsed.success) throw new Error(parsed.error.errors[0].message)
+
+  await prisma.corujao.update({
+    where: { id: corujaoId },
+    data: { name: parsed.data.name, date: new Date(parsed.data.date) },
+  })
+  revalidatePath(`/corujoes/${corujaoId}`)
+  revalidatePath('/corujoes')
+  redirect(`/corujoes/${corujaoId}`)
 }
 
 export async function deleteCorujao(corujaoId: string) {
