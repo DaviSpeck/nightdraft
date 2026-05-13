@@ -85,16 +85,19 @@ model CorujaoPlayer {
 // ─── JOGO (série MD1/MD3/MD5) ─────────────────────────
 
 model Jogo {
-  id         String      @id @default(cuid())
-  sequence   Int
-  format     MatchFormat @default(MD1)
-  status     MatchStatus @default(SCHEDULED)
-  nameTeamA  String?
-  nameTeamB  String?
-  scoreTeamA Int?
-  scoreTeamB Int?
-  playedAt   DateTime?
-  createdAt  DateTime    @default(now())
+  id           String       @id @default(cuid())
+  sequence     Int
+  format       MatchFormat  @default(MD1)
+  status       MatchStatus  @default(SCHEDULED)
+  nameTeamA    String?
+  nameTeamB    String?
+  scoreTeamA   Int?
+  scoreTeamB   Int?
+  playedAt     DateTime?
+  createdAt    DateTime     @default(now())
+  creationMode CreationMode @default(MANUAL)
+  draftStatus  DraftStatus?
+  draftTurn    MatchSide?
 
   corujaoId String
   corujao   Corujao @relation(fields: [corujaoId], references: [id], onDelete: Cascade)
@@ -107,12 +110,13 @@ model Jogo {
 }
 
 model JogoMembro {
-  id       String    @id @default(cuid())
-  side     MatchSide
-  jogoId   String
-  playerId String
-  jogo     Jogo   @relation(fields: [jogoId], references: [id], onDelete: Cascade)
-  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  id        String    @id @default(cuid())
+  side      MatchSide
+  isCaptain Boolean   @default(false)
+  jogoId    String
+  playerId  String
+  jogo      Jogo   @relation(fields: [jogoId], references: [id], onDelete: Cascade)
+  player    Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([jogoId, playerId])
 }
@@ -181,4 +185,14 @@ enum BanPickAction {
   BAN
   PICK
   DECIDER
+}
+
+enum CreationMode {
+  MANUAL
+  DRAFT
+}
+
+enum DraftStatus {
+  DRAFTING
+  COMPLETED
 }

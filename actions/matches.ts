@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/db'
-import { MatchFormat } from '@prisma/client'
+import { MatchFormat, MatchSide } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
@@ -106,6 +106,98 @@ export async function finalizeMatch(jogoId: string, corujaoId: string, formData:
 
   revalidatePath(`/corujoes/${corujaoId}`)
   redirect(`/corujoes/${corujaoId}`)
+}
+
+export async function createMatchDraft(corujaoId: string, formData: FormData) {
+  const format = formData.get('format') as string
+  const captainAId = formData.get('captainAId') as string
+  const captainBId = formData.get('captainBId') as string
+
+  if (!captainAId || !captainBId) throw new Error('Selecione os dois capitães')
+  if (captainAId === captainBId) throw new Error('Os capitães devem ser jogadores diferentes')
+  if (!['MD1', 'MD3', 'MD5'].includes(format)) throw new Error('Formato inválido')
+
+  const [captainA, captainB, playerCount] = await Promise.all([
+    prisma.player.findUnique({ where: { id: captainAId } }),
+    prisma.player.findUnique({ where: { id: captainBId } }),
+    prisma.corujaoPlayer.count({ where: { corujaoId } }),
+  ])
+
+  if (!captainA || !captainB) throw new Error('Jogador não encontrado')
+  if (playerCount < 4) throw new Error('Mínimo de 4 jogadores para o draft')
+  if (playerCount % 2 !== 0) throw new Error('O draft requer um número par de jogadores')
+
+  const draftTurn: MatchSide = Math.random() < 0.5 ? 'TEAM_A' : 'TEAM_B'
+  const nameTeamA = `Time ${captainA.nickname ?? captainA.name}`
+  const nameTeamB = `Time ${captainB.nickname ?? captainB.name}`
+
+  const last = await prisma.jogo.findFirst({ where: { corujaoId }, orderBy: { sequence: 'desc' } })
+  const sequence = (last?.sequence ?? 0) + 1
+
+  const jogo = await prisma.jogo.create({
+    data: {
+      corujaoId,
+      sequence,
+      format: format as MatchFormat,
+      nameTeamA,
+      nameTeamB,
+      creationMode: 'DRAFT',
+      draftStatus: 'DRAFTING',
+      draftTurn,
+      membros: {
+        create: [
+          { playerId: captainAId, side: 'TEAM_A', isCaptain: true },
+          { playerId: captainBId, side: 'TEAM_B', isCaptain: true },
+        ],
+      },
+    },
+  })
+
+  revalidatePath(`/corujoes/${corujaoId}`)
+  redirect(`/corujoes/${corujaoId}/matches/${jogo.id}/draft`)
+}
+
+export async function draftPick(jogoId: string, corujaoId: string, formData: FormData) {
+  const playerId = formData.get('playerId') as string
+  if (!playerId) throw new Error('Jogador inválido')
+
+  const jogo = await prisma.jogo.findUnique({
+    where: { id: jogoId },
+    include: {
+      membros: { select: { playerId: true } },
+      corujao: { include: { players: { select: { playerId: true } } } },
+    },
+  })
+  if (!jogo) throw new Error('Jogo não encontrado')
+  if (jogo.draftStatus !== 'DRAFTING') throw new Error('Draft já finalizado')
+
+  const pickedIds = new Set(jogo.membros.map(m => m.playerId))
+  const availableIds = jogo.corujao.players
+    .map(p => p.playerId)
+    .filter(id => !pickedIds.has(id))
+
+  if (!availableIds.includes(playerId)) throw new Error('Jogador não disponível')
+
+  const side = jogo.draftTurn!
+  const isLastPick = availableIds.length === 1
+  const nextTurn: MatchSide = side === 'TEAM_A' ? 'TEAM_B' : 'TEAM_A'
+
+  await prisma.$transaction(async (tx) => {
+    await tx.jogoMembro.create({ data: { jogoId, playerId, side, isCaptain: false } })
+    await tx.jogo.update({
+      where: { id: jogoId },
+      data: {
+        draftTurn: isLastPick ? null : nextTurn,
+        draftStatus: isLastPick ? 'COMPLETED' : 'DRAFTING',
+      },
+    })
+  })
+
+  revalidatePath(`/corujoes/${corujaoId}/matches/${jogoId}/draft`)
+
+  if (isLastPick) {
+    redirect(`/corujoes/${corujaoId}/matches/${jogoId}/ban-pick`)
+  }
 }
 
 export async function deleteMatch(jogoId: string, corujaoId: string) {

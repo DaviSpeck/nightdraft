@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { prisma } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -158,18 +159,18 @@ export default async function JogoPage({ params }: { params: Promise<{ id: strin
                       {jogo.membros.map(membro => {
                         const stat = existingStats.find(s => s.playerId === membro.playerId)
                         return (
-                          <>
-                            <p key={`name_${membro.id}`} className="text-sm text-white flex items-center gap-1.5">
+                          <Fragment key={membro.id}>
+                            <p className="text-sm text-white flex items-center gap-1.5">
                               <span>{membro.player.avatar ?? DEFAULT_AVATAR}</span>
                               {membro.player.nickname ?? membro.player.name}
                               <span className={`text-[10px] ${membro.side === 'TEAM_A' ? 'text-accent-blue/50' : 'text-accent-red/50'}`}>
                                 {membro.side === 'TEAM_A' ? jogo.nameTeamA ?? 'A' : jogo.nameTeamB ?? 'B'}
                               </span>
                             </p>
-                            <input key={`k_${membro.id}`} name={`kills_${membro.playerId}_${bp.mapId}`} type="number" min="0" max="99" defaultValue={stat?.kills ?? 0} className="w-12 bg-surface border border-white/[0.08] rounded px-1 py-1 text-center text-sm text-white focus:outline-none focus:border-accent-green" />
-                            <input key={`d_${membro.id}`} name={`deaths_${membro.playerId}_${bp.mapId}`} type="number" min="0" max="99" defaultValue={stat?.deaths ?? 0} className="w-12 bg-surface border border-white/[0.08] rounded px-1 py-1 text-center text-sm text-white focus:outline-none focus:border-accent-red" />
-                            <input key={`a_${membro.id}`} name={`assists_${membro.playerId}_${bp.mapId}`} type="number" min="0" max="99" defaultValue={stat?.assists ?? 0} className="w-12 bg-surface border border-white/[0.08] rounded px-1 py-1 text-center text-sm text-white focus:outline-none focus:border-accent-blue" />
-                          </>
+                            <input name={`kills_${membro.playerId}_${bp.mapId}`} type="number" min="0" max="99" defaultValue={stat?.kills ?? 0} className="w-12 bg-surface border border-white/[0.08] rounded px-1 py-1 text-center text-sm text-white focus:outline-none focus:border-accent-green" />
+                            <input name={`deaths_${membro.playerId}_${bp.mapId}`} type="number" min="0" max="99" defaultValue={stat?.deaths ?? 0} className="w-12 bg-surface border border-white/[0.08] rounded px-1 py-1 text-center text-sm text-white focus:outline-none focus:border-accent-red" />
+                            <input name={`assists_${membro.playerId}_${bp.mapId}`} type="number" min="0" max="99" defaultValue={stat?.assists ?? 0} className="w-12 bg-surface border border-white/[0.08] rounded px-1 py-1 text-center text-sm text-white focus:outline-none focus:border-accent-blue" />
+                          </Fragment>
                         )
                       })}
                     </div>
